@@ -1,11 +1,11 @@
 ﻿using Newtonsoft.Json;
 using Pagos.Designer.Interfaces.External.CustomHooks;
 using Pagos.Designer.Interfaces.External.Messaging;
-using Pagos.SpreadsheetWeb.Web.Api.Objects.Calculation;
+using Pagos.SpreadsheetWeb.Web.Api.Objects.ApplicationSchema;
 using System;
-using System.Linq;
 using System.Net;
 using System.Text;
+using Pagos.SpreadsheetWeb.Web.Api.Objects.Calculation;
 
 namespace AirTable
 {
@@ -20,9 +20,9 @@ namespace AirTable
     {
         public string Name { get; set; }
         public string UserName { get; set; }
-        public string Email { get; set; }
+        public string EMail { get; set; }
         public string Phone { get; set; }
-        public DateTime RecordDate { get; set; }
+        public string RecordDate { get; set; }
     }
 
     /// <summary>
@@ -41,15 +41,14 @@ namespace AirTable
         private string tableName = "your_airtable_table_name";
         private string apiKey = "your_airtable_api_key";
 
-        public Class1()
-        {
+        public Class1() {
             ServicePointManager.SecurityProtocol =
                 SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
         }
 
         /// <summary>
         /// Air table uses oauth for service calls. This method will be our helper to access air table services.
-        /// To see detailed information about end points and paramters please visit below link.
+        /// To see detailed information about end points and parameters please visit below link.
         /// https://airtable.com/api
         /// </summary>
         /// <typeparam name="T"></typeparam>
@@ -97,26 +96,34 @@ namespace AirTable
             return JsonConvert.DeserializeObject<T>(responseText);
         }
 
-        public ActionableResponse AfterCalculation(CalculationRequest request, CalculationResponse response)
-        {
 
-            var name = request.Inputs.FirstOrDefault(x => x.Ref == "iName");
-            var phone = request.Inputs.FirstOrDefault(x => x.Ref == "iPhone");
-            var email = request.Inputs.FirstOrDefault(x => x.Ref == "iEmail");
-            var userName = request.Inputs.FirstOrDefault(x => x.Ref == "iUserName");
+        public ActionableResponse AfterCalculation(INamedRangesCache namedRangesCache)
+        {
+            var name = namedRangesCache.GetNamedRange("iName");
+            var phone = namedRangesCache.GetNamedRange("iPhone");
+            var email = namedRangesCache.GetNamedRange("iEmail");
+            var userName = namedRangesCache.GetNamedRange("iUserName");
 
             Request myRequest = new Request();
             myRequest.fields = new FieldsObject();
             myRequest.fields.Name = name.Value[0][0].Value;
             myRequest.fields.UserName = userName.Value[0][0].Value;
-            myRequest.fields.Email = email.Value[0][0].Value;
+            myRequest.fields.EMail = email.Value[0][0].Value;
             myRequest.fields.Phone = phone.Value[0][0].Value;
-            myRequest.fields.RecordDate = DateTime.Now;
+            myRequest.fields.RecordDate = DateTime.Now.ToShortDateString();
 
             try
             {
                 var result = Post<Response>("https://api.airtable.com/v0", applicationId, tableName, myRequest, apiKey);
-                response.Outputs.FirstOrDefault(x => x.Ref == "oResponse").Value[0][0].Value = result.id;
+                CellValue[][] val = new CellValue[1][];
+                val[0] = new CellValue[1];
+                val[0][0] = new CellValue
+                {
+                    Value = result.id
+                };
+
+                namedRangesCache.UpdateNamedRange("oResponse", val);
+
                 return new ActionableResponse
                 {
                     Success = true,
@@ -130,6 +137,7 @@ namespace AirTable
                     Messages = new System.Collections.Generic.List<string>() { ex.Message }
                 };
             }
+
         }
     }
 }
