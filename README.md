@@ -5,7 +5,9 @@ SpreadsheetWeb is a platform for building and generating web applications and co
 This repository contains sample code that aims to demonstrate how to inject custom code that can communicate with the [Airtable](https://airtable.com) API. The provided sample code submits a record to the Airtable data structure, but the same basic principles can be applied to any functions permitted by the target service.
 
 > The sample can be used only with SpreadsheetWeb Server Packages - must have an active [server license](https://www.spreadsheetweb.com/server-pricing/).
-
+```bash
+> For version after 6.15
+```
 > You will also need to have an active Airtable account in order to request access to their web service. 
 
 ## Download
